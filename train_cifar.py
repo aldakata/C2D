@@ -21,7 +21,7 @@ def save_losses(input_loss, exp):
 
 
 def eval_train(
-    model, eval_loader, CE, all_loss, epoch, net, device, r, stats_log, codivide
+    model, eval_loader, CE, all_loss, epoch, net, device, r, stats_log, cclm
 ):
     model.eval()
     losses = torch.zeros(50000)
@@ -57,7 +57,7 @@ def eval_train(
 
     # exp = '_std_tpc_oracle'
     # save_losses(input_loss, exp)
-    if codivide == "gmm":
+    if not cclm:
         gmm = GaussianMixture(n_components=2, max_iter=200, tol=1e-2, reg_covar=5e-4)
         gmm.fit(input_loss)
         clean_idx, noisy_idx = gmm.means_.argmin(), gmm.means_.argmax()
@@ -76,7 +76,7 @@ def eval_train(
 
         prob = gmm.predict_proba(input_loss)
         prob = prob[:, clean_idx]
-    elif codivide == "ccgmm":
+    else:
         prob = ccgmm_codivide(input_loss, targets)
 
     return prob, all_loss, losses_clean
@@ -131,7 +131,7 @@ def run_train_loop(
     stats_log,
     loss_log,
     test_log,
-    codivide,
+    cclm,
 ):
     for epoch in range(num_epochs + 1):
         test_loader = loader.run("test")
@@ -169,10 +169,10 @@ def run_train_loop(
             )
 
             # prob1, all_loss[0], losses_clean1 = eval_train(
-            #     net1, eval_loader, CE, all_loss[0], epoch, 1, device, r, stats_log, codivide
+            #     net1, eval_loader, CE, all_loss[0], epoch, 1, device, r, stats_log, cclm
             # )
             # prob2, all_loss[1], losses_clean2 = eval_train(
-            #     net2, eval_loader, CE, all_loss[1], epoch, 2, device, r, stats_log, codivide
+            #     net2, eval_loader, CE, all_loss[1], epoch, 2, device, r, stats_log, cclm
             # )
 
             # p_thr2 = np.clip(p_threshold, prob2.min() + 1e-5, prob2.max() - 1e-5)
@@ -201,7 +201,7 @@ def run_train_loop(
                 device,
                 r,
                 stats_log,
-                codivide,
+                cclm,
             )
 
             p_thr2 = np.clip(p_threshold, prob2.min() + 1e-5, prob2.max() - 1e-5)
@@ -253,7 +253,7 @@ def run_train_loop(
                 device,
                 r,
                 stats_log,
-                codivide,
+                cclm,
             )
 
             p_thr1 = np.clip(p_threshold, prob1.min() + 1e-5, prob1.max() - 1e-5)
