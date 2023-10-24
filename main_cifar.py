@@ -70,6 +70,7 @@ def parse_args():
         "--cc", dest="cc", action="store_true", help="use supcon", default=False
     )
     parser.add_argument("--noise-type", dest="noise_type", default="aggre_label")
+    parser.add_argument("--natural", type=str, help="path to natural noise")
 
     args = parser.parse_args()
 
