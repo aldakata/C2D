@@ -18,11 +18,12 @@ def ccgmm_codivide(loss: np.ndarray, targets: np.ndarray) -> np.ndarray:
         mask = targets == c
 
         gmm = GaussianMixture(n_components=2, max_iter=10, tol=1e-2, reg_covar=5e-4)
-        gmm.fit(loss[:, 0][mask].reshape(-1, 1))
+        print(loss.shape, mask.shape, mask)
+        tmp = loss[:, 0][mask].reshape(-1, 1)
+        gmm.fit(tmp)
 
         clean_idx, noisy_idx = gmm.means_.argmin(), gmm.means_.argmax()
-
-        p = gmm.predict_proba(loss[:, 0][mask].reshape(-1, 1))
+        p = gmm.predict_proba(tmp)
         prob[mask] = p[:, clean_idx]
 
     return prob
