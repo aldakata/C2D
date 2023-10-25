@@ -162,13 +162,14 @@ def main():
     print(f"You chose {cc}")
 
     os.makedirs("./checkpoint", exist_ok=True)
-    log_name = "./checkpoint/%s_%s_%.2f_%.1f_%s_%s" % (
+    log_name = "./checkpoint/%s_%s_%.2f_%.1f_%s_%s_%s" % (
         args.experiment_name,
         args.dataset,
         args.r,
         args.lambda_u,
         args.noise_mode,
         cc,
+        args.noise_type,
     )
     stats_log = open(log_name + "_stats.txt", "w")
     test_log = open(log_name + "_acc.txt", "w")
