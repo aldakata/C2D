@@ -139,6 +139,8 @@ class cifar_dataset(Dataset):
         self.r = r  # noise ratio
         self.transform = transform
         self.mode = mode
+        print(f"dataset.noise_type - {noise_type}")
+
         # class transition for asymmetric noise
 
         if dataset == "cifar10":
@@ -348,6 +350,8 @@ class cifar_dataloader:
         self.log = log
         self.noise_file = noise_file
         self.noise_type = noise_type
+        print(f"dataloader.noise_type - {noise_type}")
+
         if self.dataset == "cifar10":
             self.transform_train = transforms.Compose(
                 [
