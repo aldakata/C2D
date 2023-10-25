@@ -192,6 +192,7 @@ class cifar_dataset(Dataset):
 
             if os.path.exists(noise_file):
                 if not noise_type:
+                    print("No natural noise setting chosen")
                     noise_label = json.load(open(noise_file, "r"))
                 else:
                     nf = torch.load(noise_file)
