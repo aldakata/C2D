@@ -77,7 +77,7 @@ def eval_train(
         prob = gmm.predict_proba(input_loss)
         prob = prob[:, clean_idx]
     else:
-        prob = ccgmm_codivide(input_loss, targets)
+        prob = ccgmm_codivide(input_loss, targets_all)
 
     return prob, all_loss, losses_clean
 
