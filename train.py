@@ -5,17 +5,21 @@ import torch
 import torch.nn.functional as F
 
 
-def co_guess(net, net2, inputs_x, inputs_u, inputs_x2, inputs_u2, w_x, labels_x, T, smooth_clean):
+def co_guess(
+    net, net2, inputs_x, inputs_u, inputs_x2, inputs_u2, w_x, labels_x, T, smooth_clean
+):
     # label co-guessing of unlabeled samples
     outputs_u11 = net(inputs_u)
     outputs_u12 = net(inputs_u2)
     outputs_u21 = net2(inputs_u)
     outputs_u22 = net2(inputs_u2)
 
-    pu = (torch.softmax(outputs_u11, dim=1) +
-          torch.softmax(outputs_u12, dim=1) +
-          torch.softmax(outputs_u21, dim=1) +
-          torch.softmax(outputs_u22, dim=1)) / 4
+    pu = (
+        torch.softmax(outputs_u11, dim=1)
+        + torch.softmax(outputs_u12, dim=1)
+        + torch.softmax(outputs_u21, dim=1)
+        + torch.softmax(outputs_u22, dim=1)
+    ) / 4
     ptu = pu ** (1 / T)  # temperature sharpening
 
     targets_u = ptu / ptu.sum(dim=1, keepdim=True)  # normalize
@@ -38,23 +42,46 @@ def co_guess(net, net2, inputs_x, inputs_u, inputs_x2, inputs_u2, w_x, labels_x,
 
 
 # Training
-def train(epoch, net, net2, criterion, optimizer, labeled_trainloader, unlabeled_trainloader, lambda_u, batch_size,
-          num_class, device, T, alpha, warm_up, dataset, r, noise_mode, num_epochs, smooth_clean=True):
+def train(
+    epoch,
+    net,
+    net2,
+    criterion,
+    optimizer,
+    labeled_trainloader,
+    unlabeled_trainloader,
+    lambda_u,
+    batch_size,
+    num_class,
+    device,
+    T,
+    alpha,
+    warm_up,
+    dataset,
+    r,
+    noise_mode,
+    num_epochs,
+    smooth_clean=True,
+):
     net.train()
     net2.eval()  # fix one network and train the other
 
     unlabeled_train_iter = iter(unlabeled_trainloader)
     num_iter = (len(labeled_trainloader.dataset) // batch_size) + 1
-    for batch_idx, (inputs_x, inputs_x2, labels_x, _, w_x) in enumerate(labeled_trainloader):
+    for batch_idx, (inputs_x, inputs_x2, labels_x, _, w_x) in enumerate(
+        labeled_trainloader
+    ):
         try:
-            inputs_u, inputs_u2 = unlabeled_train_iter.next()
+            inputs_u, inputs_u2 = next(unlabeled_train_iter)
         except:
             unlabeled_train_iter = iter(unlabeled_trainloader)
-            inputs_u, inputs_u2 = unlabeled_train_iter.next()
+            inputs_u, inputs_u2 = next(unlabeled_train_iter)
         batch_size = inputs_x.size(0)
 
         # Transform label to one-hot
-        labels_x = torch.zeros(batch_size, num_class).scatter_(1, labels_x.view(-1, 1), 1)
+        labels_x = torch.zeros(batch_size, num_class).scatter_(
+            1, labels_x.view(-1, 1), 1
+        )
         w_x = w_x.view(-1, 1).type(torch.FloatTensor)
 
         inputs_x, inputs_x2 = inputs_x.to(device), inputs_x2.to(device)
@@ -63,8 +90,18 @@ def train(epoch, net, net2, criterion, optimizer, labeled_trainloader, unlabeled
 
         with torch.no_grad():
             # label co-guessing of unlabeled samples
-            targets_x, targets_u = co_guess(net, net2, inputs_x, inputs_u, inputs_x2, inputs_u2, w_x, labels_x, T,
-                                            smooth_clean)
+            targets_x, targets_u = co_guess(
+                net,
+                net2,
+                inputs_x,
+                inputs_u,
+                inputs_x2,
+                inputs_u2,
+                w_x,
+                labels_x,
+                T,
+                smooth_clean,
+            )
 
         # mixmatch
         l = np.random.beta(alpha, alpha)
@@ -83,18 +120,31 @@ def train(epoch, net, net2, criterion, optimizer, labeled_trainloader, unlabeled
             mixed_target = l * target_a + (1 - l) * target_b
 
             logits = net(mixed_input)
-            logits_x = logits[:batch_size * 2]
-            logits_u = logits[batch_size * 2:]
+            logits_x = logits[: batch_size * 2]
+            logits_u = logits[batch_size * 2 :]
 
-            Lx, Lu, lamb = criterion(logits_x, mixed_target[:batch_size * 2], logits_u, mixed_target[batch_size * 2:],
-                                     epoch + batch_idx / num_iter, warm_up, lambda_u)
+            Lx, Lu, lamb = criterion(
+                logits_x,
+                mixed_target[: batch_size * 2],
+                logits_u,
+                mixed_target[batch_size * 2 :],
+                epoch + batch_idx / num_iter,
+                warm_up,
+                lambda_u,
+            )
         else:
-            mixed_input = l * input_a[:batch_size * 2] + (1 - l) * input_b[:batch_size * 2]
-            mixed_target = l * target_a[:batch_size * 2] + (1 - l) * target_b[:batch_size * 2]
+            mixed_input = (
+                l * input_a[: batch_size * 2] + (1 - l) * input_b[: batch_size * 2]
+            )
+            mixed_target = (
+                l * target_a[: batch_size * 2] + (1 - l) * target_b[: batch_size * 2]
+            )
 
             logits = net(mixed_input)
 
-            Lx = -torch.mean(torch.sum(F.log_softmax(logits, dim=1) * mixed_target, dim=1))
+            Lx = -torch.mean(
+                torch.sum(F.log_softmax(logits, dim=1) * mixed_target, dim=1)
+            )
             lamb, Lu = 0, 0
         # regularization
         prior = torch.ones(num_class) / num_class
@@ -108,20 +158,54 @@ def train(epoch, net, net2, criterion, optimizer, labeled_trainloader, unlabeled
         loss.backward()
         optimizer.step()
 
-        sys.stdout.write('\r')
-        if 'cifar' in 'dataset':
-            sys.stdout.write('%s:%.1f-%s | Epoch [%3d/%3d] Iter[%3d/%3d]\t'
-                             'Labeled loss: %.2f  Unlabeled loss: %.2e(%.2e)  penalty: %.2e'
-                             % (dataset, r, noise_mode, epoch, num_epochs, batch_idx + 1, num_iter,
-                                Lx.item(), Lu.item(), lamb * Lu.item(), penalty.item()))
-        elif 'clothing' in dataset:
-            sys.stdout.write('Clothing1M | Epoch [%3d/%3d] Iter[%3d/%3d]\t'
-                             'Labeled loss: %.2f  penalty: %.2e'
-                             % (epoch, num_epochs, batch_idx + 1, num_iter, Lx.item(), penalty.item()))
+        sys.stdout.write("\r")
+        if "cifar" in "dataset":
+            sys.stdout.write(
+                "%s:%.1f-%s | Epoch [%3d/%3d] Iter[%3d/%3d]\t"
+                "Labeled loss: %.2f  Unlabeled loss: %.2e(%.2e)  penalty: %.2e"
+                % (
+                    dataset,
+                    r,
+                    noise_mode,
+                    epoch,
+                    num_epochs,
+                    batch_idx + 1,
+                    num_iter,
+                    Lx.item(),
+                    Lu.item(),
+                    lamb * Lu.item(),
+                    penalty.item(),
+                )
+            )
+        elif "clothing" in dataset:
+            sys.stdout.write(
+                "Clothing1M | Epoch [%3d/%3d] Iter[%3d/%3d]\t"
+                "Labeled loss: %.2f  penalty: %.2e"
+                % (
+                    epoch,
+                    num_epochs,
+                    batch_idx + 1,
+                    num_iter,
+                    Lx.item(),
+                    penalty.item(),
+                )
+            )
         sys.stdout.flush()
 
 
-def warmup(epoch, net, optimizer, dataloader, criterion, conf_penalty, device, dataset, r, num_epochs, noise_mode):
+def warmup(
+    epoch,
+    net,
+    optimizer,
+    dataloader,
+    criterion,
+    conf_penalty,
+    device,
+    dataset,
+    r,
+    num_epochs,
+    noise_mode,
+):
     net.train()
     for batch_idx, (inputs, _, labels, _, _) in enumerate(dataloader):
         inputs, labels = inputs.to(device), labels.to(device)
@@ -130,18 +214,30 @@ def warmup(epoch, net, optimizer, dataloader, criterion, conf_penalty, device, d
         loss = criterion(outputs, labels)
 
         assert torch.isfinite(loss).all()
-        penalty = conf_penalty(outputs) if conf_penalty is not None else 0.
+        penalty = conf_penalty(outputs) if conf_penalty is not None else 0.0
         L = loss + penalty
         L.backward()
-        torch.nn.utils.clip_grad_norm_(net.parameters(), 1.)
+        torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
         optimizer.step()
 
-        sys.stdout.write('\r')
-        if 'clothing' in dataset:
-            sys.stdout.write('|Warm-up: Iter[%3d/%3d]\t CE-loss: %.4f  Conf-Penalty: %.4f'
-                             % (batch_idx + 1, len(dataloader), loss.item(), penalty.item()))
-        elif 'cifar' in dataset:
-            sys.stdout.write('%s:%.1f-%s | Epoch [%3d/%3d] Iter[%3d/%3d]\t CE-loss: %.4f'
-                             % (dataset, r, noise_mode, epoch, num_epochs, batch_idx + 1, len(dataloader),
-                                loss.item()))
+        sys.stdout.write("\r")
+        if "clothing" in dataset:
+            sys.stdout.write(
+                "|Warm-up: Iter[%3d/%3d]\t CE-loss: %.4f  Conf-Penalty: %.4f"
+                % (batch_idx + 1, len(dataloader), loss.item(), penalty.item())
+            )
+        elif "cifar" in dataset:
+            sys.stdout.write(
+                "%s:%.1f-%s | Epoch [%3d/%3d] Iter[%3d/%3d]\t CE-loss: %.4f"
+                % (
+                    dataset,
+                    r,
+                    noise_mode,
+                    epoch,
+                    num_epochs,
+                    batch_idx + 1,
+                    len(dataloader),
+                    loss.item(),
+                )
+            )
         sys.stdout.flush()
