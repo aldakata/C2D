@@ -130,7 +130,7 @@ class cifar_dataset(Dataset):
         log="",
         oracle="none",
         mix_labelled=True,
-        noise_type="aggre_label",
+        noise_type=None,
     ):
         assert oracle in ("none", "positive", "negative", "all", "negative_shuffle")
         assert dataset in ("cifar10", "cifar100")
@@ -191,15 +191,17 @@ class cifar_dataset(Dataset):
             train_data = train_data.transpose((0, 2, 3, 1))
 
             if os.path.exists(noise_file):
-                # noise_label = json.load(open(noise_file, "r"))
-                nf = torch.load(noise_file)
-                if dataset == "cifar10":
-                    train_label = nf["clean_label"]
-                    noise_label = nf[noise_type]
-                    print(f"You selected CIFAR10N {noise_type}")
-                elif dataset == "cifar100":
-                    train_label = nf["clean_label"]
-                    noise_label = nf["noisy_label"]
+                if not noise_type:
+                    noise_label = json.load(open(noise_file, "r"))
+                else:
+                    nf = torch.load(noise_file)
+                    if dataset == "cifar10":
+                        train_label = nf["clean_label"]
+                        noise_label = nf[noise_type]
+                        print(f"You selected CIFAR10N {noise_type}")
+                    elif dataset == "cifar100":
+                        train_label = nf["clean_label"]
+                        noise_label = nf["noisy_label"]
             else:  # inject noise
                 noise_label = []
                 idx = list(range(50000))
@@ -334,7 +336,7 @@ class cifar_dataloader:
         log,
         noise_file="",
         stronger_aug=False,
-        noise_type="aggre_label",
+        noise_type=None,
     ):
         self.dataset = dataset
         self.r = r
