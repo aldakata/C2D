@@ -10,7 +10,7 @@ def ccgmm_codivide(loss: np.ndarray, targets: np.ndarray) -> np.ndarray:
     @params:
     - targets - np.array with the class of every element.
     """
-    num_classes = max(targets).item() + 1  # Find total number of classes
+    num_classes = max(targets).int().item() + 1  # Find total number of classes
     prob = np.zeros(loss.size()[0])
     loss = loss.to("cpu").numpy()
     targets = targets.to("cpu").numpy()
