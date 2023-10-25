@@ -196,7 +196,7 @@ def main():
     if args.natural:
         noise_file = f"{args.natural}"
     else:
-        noise_file = ("%s/%.2f_%s.json" % (args.data_path, args.r, args.noise_mode),)
+        noise_file = "%s/%.2f_%s.json" % (args.data_path, args.r, args.noise_mode)
 
     loader = dataloader.cifar_dataloader(
         args.dataset,
