@@ -101,6 +101,7 @@ def run_test(epoch, net1, net2, test_loader, device, test_log):
     print("\n| Test Epoch #%d\t Accuracy: %.2f%%\n" % (epoch, acc))
     test_log.write("Epoch:%d   Accuracy:%.2f\n" % (epoch, acc))
     test_log.flush()
+    return acc
 
 
 def run_train_loop(
@@ -133,6 +134,7 @@ def run_train_loop(
     test_log,
     memory_log,
     cclm,
+    args,
 ):
     for epoch in range(num_epochs + 1):
         test_loader = loader.run("test")
@@ -284,26 +286,38 @@ def run_train_loop(
                 num_epochs,
             )  # train net2
 
-        run_test(epoch, net1, net2, test_loader, device, test_log)
+        this_acc = run_test(epoch, net1, net2, test_loader, device, test_log)
 
-        if not (epoch - warm_up) % 25:
-            torch.save(
-                {
-                    "model_state_dict": net1.state_dict(),
-                    "optimizer_state_dict": optimizer1.state_dict(),
-                },
-                f"{memory_log}/{epoch}_1.pth.tar",
-            )
+        if (not epoch % 25) or (epoch == warm_up) or epoch == 0:
+            checkpoint1 = {
+                "net": net1.state_dict(),
+                "Model_number": 1,
+                "Noise_Ratio": args.r,
+                "Loss Function": "CrossEntropyLoss",
+                "Optimizer": "SGD",
+                "Noise_mode": args.noise_mode,
+                "Accuracy": this_acc,
+                "Dataset": args.dataset,
+                "Batch Size": args.batch_size,
+                "epoch": epoch,
+            }
+            checkpoint2 = {
+                "net": net2.state_dict(),
+                "Model_number": 2,
+                "Noise_Ratio": args.r,
+                "Loss Function": "CrossEntropyLoss",
+                "Optimizer": "SGD",
+                "Noise_mode": args.noise_mode,
+                "Accuracy": this_acc,
+                "Dataset": args.dataset,
+                "Batch Size": args.batch_size,
+                "epoch": epoch,
+            }
 
-            torch.save(
-                {
-                    "model_state_dict": net2.state_dict(),
-                    "optimizer_state_dict": optimizer2.state_dict(),
-                },
-                f"{memory_log}/{epoch}_2.pth.tar",
-            )
+            torch.save(checkpoint1, f"{memory_log}/{epoch}_1.pt")
+            torch.save(checkpoint2, f"{memory_log}/{epoch}_2.pt")
 
-        sched1.step()
-        sched2.step()
+            sched1.step()
+            sched2.step()
 
     torch.save(net1.state_dict(), "./final_checkpoints/final_checkpoint.pth.tar")

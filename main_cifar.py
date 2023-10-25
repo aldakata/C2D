@@ -175,7 +175,7 @@ def main():
     test_log = open(log_name + "_acc.txt", "w")
     loss_log = open(log_name + "_loss.txt", "w")
     memory_log = f"{log_name}_memory"
-    os.makedirs(memory_log)
+    os.makedirs(memory_log, exist_ok=True)
 
     # define warmup
     if args.dataset == "cifar10":
@@ -284,6 +284,7 @@ def main():
         test_log,
         memory_log,
         args.cc,
+        args,
     )
 
 
