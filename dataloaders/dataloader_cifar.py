@@ -440,6 +440,7 @@ class cifar_dataloader:
             transform=self.transform_warmup,
             mode="all",
             noise_file=self.noise_file,
+            noise_type=self.noise_type,
         ).clean
 
     def run(self, mode, pred=[], prob=[]):
