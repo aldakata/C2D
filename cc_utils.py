@@ -12,6 +12,8 @@ def ccgmm_codivide(loss: np.ndarray, targets: np.ndarray) -> np.ndarray:
     """
     num_classes = max(targets) + 1  # Find total number of classes
     prob = np.zeros(loss.size()[0])
+    loss = loss.to("cpu").numpy()
+    targets = targets.to("cpu").numpy()
     for c in range(num_classes):
         mask = targets == c
 
@@ -34,6 +36,7 @@ def gmm_codivide(loss: np.ndarray) -> np.ndarray:
     @params:
     - targets - np.array with the class of every element.
     """
+    loss = loss.to("cpu").numpy()
     gmm = GaussianMixture(n_components=2, max_iter=10, tol=1e-2, reg_covar=5e-4)
     gmm.fit(loss)
     prob = gmm.predict_proba(loss)
