@@ -131,6 +131,7 @@ def run_train_loop(
     stats_log,
     loss_log,
     test_log,
+    memory_log,
     cclm,
 ):
     for epoch in range(num_epochs + 1):
@@ -285,6 +286,11 @@ def run_train_loop(
 
         run_test(epoch, net1, net2, test_loader, device, test_log)
 
+        if not (epoch - warm_up) % 25:
+            torch.save(net1.state_dict(), f"{memory_log}/{epoch}_1.pth.tar")
+            torch.save(net2.state_dict(), f"{memory_log}/{epoch}_2.pth.tar")
+
         sched1.step()
         sched2.step()
+
     torch.save(net1.state_dict(), "./final_checkpoints/final_checkpoint.pth.tar")
