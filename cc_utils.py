@@ -18,7 +18,6 @@ def ccgmm_codivide(loss: np.ndarray, targets: np.ndarray) -> np.ndarray:
         mask = targets == c
 
         gmm = GaussianMixture(n_components=2, max_iter=10, tol=1e-2, reg_covar=5e-4)
-        print(loss.shape, mask.shape, mask, targets.shape)
         tmp = loss[:, 0][mask].reshape(-1, 1)
         gmm.fit(tmp)
 
