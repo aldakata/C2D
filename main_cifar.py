@@ -239,10 +239,16 @@ def main():
 
     criterion = SemiLoss()
     net1, optimizer1 = load_net_optimizer_from_ckpt_to_device(
-        net1, args, f"./checkpoint/cifar100_0.9_sym_0.5_cc_memory/275_1.pt", device
+        net1,
+        args,
+        f"./checkpoint/memory_c2d_cclm_cifar100_0.90_500.0_sym_cc_None_memory/275_1.pt",
+        args.device,
     )
     net2, optimizer2 = load_net_optimizer_from_ckpt_to_device(
-        net2, args, f"./checkpoint/cifar100_0.9_sym_0.5_cc_memory/275_2.pt", device
+        net2,
+        args,
+        f"./checkpoint/memory_c2d_cclm_cifar100_0.90_500.0_sym_cc_None_memory/275_2.pt",
+        args.device,
     )
 
     sched1 = torch.optim.lr_scheduler.StepLR(optimizer1, 10050, gamma=0.1)
