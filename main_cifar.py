@@ -221,20 +221,20 @@ def main():
         create_model = create_model_selfsup
     else:
         raise ValueError()
-    # net1 = create_model(
-    #     net=args.net,
-    #     dataset=args.dataset,
-    #     num_classes=num_classes,
-    #     device=args.device,
-    #     drop=args.drop,
-    # )
-    # net2 = create_model(
-    #     net=args.net,
-    #     dataset=args.dataset,
-    #     num_classes=num_classes,
-    #     device=args.device,
-    #     drop=args.drop,
-    # )
+    net1 = create_model(
+        net=args.net,
+        dataset=args.dataset,
+        num_classes=num_classes,
+        device=args.device,
+        drop=args.drop,
+    )
+    net2 = create_model(
+        net=args.net,
+        dataset=args.dataset,
+        num_classes=num_classes,
+        device=args.device,
+        drop=args.drop,
+    )
     cudnn.benchmark = False  # True
 
     criterion = SemiLoss()
