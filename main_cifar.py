@@ -14,6 +14,7 @@ from models import bit_models
 from models.PreResNet import *
 from models.resnet import SupCEResNet
 from train_cifar import run_train_loop
+from processing_utils import load_net_optimizer_from_ckpt_to_device
 
 
 def parse_args():
@@ -22,7 +23,7 @@ def parse_args():
     parser.add_argument(
         "--lr",
         "--learning_rate",
-        default=0.02,
+        default=0.002,
         type=float,
         help="initial learning rate",
     )
@@ -220,32 +221,32 @@ def main():
         create_model = create_model_selfsup
     else:
         raise ValueError()
-    net1 = create_model(
-        net=args.net,
-        dataset=args.dataset,
-        num_classes=num_classes,
-        device=args.device,
-        drop=args.drop,
-    )
-    net2 = create_model(
-        net=args.net,
-        dataset=args.dataset,
-        num_classes=num_classes,
-        device=args.device,
-        drop=args.drop,
-    )
+    # net1 = create_model(
+    #     net=args.net,
+    #     dataset=args.dataset,
+    #     num_classes=num_classes,
+    #     device=args.device,
+    #     drop=args.drop,
+    # )
+    # net2 = create_model(
+    #     net=args.net,
+    #     dataset=args.dataset,
+    #     num_classes=num_classes,
+    #     device=args.device,
+    #     drop=args.drop,
+    # )
     cudnn.benchmark = False  # True
 
     criterion = SemiLoss()
-    optimizer1 = optim.SGD(
-        net1.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4
+    net1, optimizer1 = load_net_optimizer_from_ckpt_to_device(
+        net1, args, f"./checkpoint/cifar100_0.9_sym_0.5_cc_memory/275_1.pt", device
     )
-    optimizer2 = optim.SGD(
-        net2.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4
+    net2, optimizer2 = load_net_optimizer_from_ckpt_to_device(
+        net2, args, f"./checkpoint/cifar100_0.9_sym_0.5_cc_memory/275_2.pt", device
     )
 
-    sched1 = torch.optim.lr_scheduler.StepLR(optimizer1, 150, gamma=0.1)
-    sched2 = torch.optim.lr_scheduler.StepLR(optimizer2, 150, gamma=0.1)
+    sched1 = torch.optim.lr_scheduler.StepLR(optimizer1, 10050, gamma=0.1)
+    sched2 = torch.optim.lr_scheduler.StepLR(optimizer2, 10050, gamma=0.1)
 
     CE = nn.CrossEntropyLoss(reduction="none")
     CEloss = nn.CrossEntropyLoss()

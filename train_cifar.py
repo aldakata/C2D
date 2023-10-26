@@ -136,7 +136,7 @@ def run_train_loop(
     cclm,
     args,
 ):
-    for epoch in range(num_epochs + 1):
+    for epoch in range(275, num_epochs + 1):
         test_loader = loader.run("test")
         eval_loader = loader.run("eval_train")
 
@@ -317,7 +317,7 @@ def run_train_loop(
             torch.save(checkpoint1, f"{memory_log}/{epoch}_1.pt")
             torch.save(checkpoint2, f"{memory_log}/{epoch}_2.pt")
 
-            sched1.step()
-            sched2.step()
+        sched1.step()
+        sched2.step()
 
     torch.save(net1.state_dict(), "./final_checkpoints/final_checkpoint.pth.tar")
