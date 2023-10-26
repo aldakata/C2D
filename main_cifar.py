@@ -241,13 +241,13 @@ def main():
     net1, optimizer1 = load_net_optimizer_from_ckpt_to_device(
         net1,
         args,
-        f"./checkpoint/memory_c2d_cclm_cifar100_0.90_500.0_sym_cc_None_memory/275_1.pt",
+        f"./checkpoint/memory_c2d_cclm_cifar100_0.90_500.0_sym_cc_None_memory/150_1.pt",
         args.device,
     )
     net2, optimizer2 = load_net_optimizer_from_ckpt_to_device(
         net2,
         args,
-        f"./checkpoint/memory_c2d_cclm_cifar100_0.90_500.0_sym_cc_None_memory/275_2.pt",
+        f"./checkpoint/memory_c2d_cclm_cifar100_0.90_500.0_sym_cc_None_memory/150_2.pt",
         args.device,
     )
 
