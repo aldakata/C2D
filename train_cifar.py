@@ -87,6 +87,10 @@ def run_test(epoch, net1, net2, test_loader, device, test_log):
     net2.eval()
     correct = 0
     total = 0
+    num_class = 100
+    per_class_accuracy = np.zeros(num_class)
+    total_predicted = torch.zeros(10000, device=device)
+    total_GT = torch.zeros(10000, device=device)
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(test_loader):
             inputs, targets = inputs.to(device), targets.to(device)
@@ -94,12 +98,16 @@ def run_test(epoch, net1, net2, test_loader, device, test_log):
             outputs2 = net2(inputs)
             outputs = outputs1 + outputs2
             _, predicted = torch.max(outputs, 1)
+            for c in set(predicted.cpu().numpy()):
+                per_class_accuracy[c] += sum(predicted[targets == c] == c)
 
             total += targets.size(0)
             correct += predicted.eq(targets).cpu().sum().item()
     acc = 100.0 * correct / total
-    print("\n| Test Epoch #%d\t Accuracy: %.2f%%\n" % (epoch, acc))
-    test_log.write("Epoch:%d   Accuracy:%.2f\n" % (epoch, acc))
+    per_class_accuracy /= total / num_class
+    std = per_class_accuracy.std()
+    print("\n| Test Epoch #%d\t Accuracy: %.2f%%\t STD: %.2f%%\n" % (epoch, acc, std))
+    test_log.write("Epoch:%d   Accuracy:%.2f\t STD: %.2f%%\n" % (epoch, acc, std))
     test_log.flush()
     return acc
 
