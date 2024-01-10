@@ -120,8 +120,8 @@ def run_test(epoch, net1, net2, test_loader, device, test_log):
     acc = 100.0 * correct / total
     per_class_accuracy /= total / num_class
     std = per_class_accuracy.std()
-    print("\n| Test Epoch #%d\t Accuracy: %.2f%%\t STD: %.2f%%\n" % (epoch, acc, std))
-    test_log.write("Epoch:%d   Accuracy:%.2f\t STD: %.2f%%\n" % (epoch, acc, std))
+    print("\n| Test Epoch #%d\t Accuracy: %.2f%%\t STD: %.4f%%\n" % (epoch, acc, std))
+    test_log.write("Epoch:%d   Accuracy:%.2f\t STD: %.4f%%\n" % (epoch, acc, std))
     test_log.flush()
     return acc
 
