@@ -27,6 +27,8 @@ def eval_train(
     losses = torch.zeros(50000)
     losses_clean = torch.zeros(50000)
     targets_all = torch.zeros(50000, device=device)
+    targets_clean_all = torch.zeros(50000, device=device)
+    per_class_accuracy = np.zeros(100)
 
     with torch.no_grad():
         for batch_idx, (inputs, _, targets, index, targets_clean) in enumerate(
@@ -40,6 +42,9 @@ def eval_train(
             outputs = model(inputs)
             loss = CE(outputs, targets)
             clean_loss = CE(outputs, targets_clean)
+            _, predicted = torch.max(outputs, 1)
+            for c in set(predicted.cpu().numpy()):
+                per_class_accuracy[c] += sum(predicted[targets_clean == c] == c)  
             for b in range(inputs.size(0)):
                 losses[index[b]] = loss[b]
                 targets_all[index[b]] = targets[b]
@@ -61,23 +66,32 @@ def eval_train(
         gmm = GaussianMixture(n_components=2, max_iter=200, tol=1e-2, reg_covar=5e-4)
         gmm.fit(input_loss)
         clean_idx, noisy_idx = gmm.means_.argmin(), gmm.means_.argmax()
-        stats_log.write(
-            "Epoch {} (net {}): GMM results: {} with weight {}\t"
-            "{} with weight {}\n".format(
-                epoch,
-                net,
-                gmm.means_[clean_idx],
-                gmm.weights_[clean_idx],
-                gmm.means_[noisy_idx],
-                gmm.weights_[noisy_idx],
-            )
-        )
-        stats_log.flush()
+        # stats_log.write(
+        #     "Epoch {} (net {}): GMM results: {} with weight {}\t"
+        #     "{} with weight {}\n".format(
+        #         epoch,
+        #         net,
+        #         gmm.means_[clean_idx],
+        #         gmm.weights_[clean_idx],
+        #         gmm.means_[noisy_idx],
+        #         gmm.weights_[noisy_idx],
+        #     )
+        # )
+        # stats_log.flush()
 
         prob = gmm.predict_proba(input_loss)
         prob = prob[:, clean_idx]
     else:
         prob = ccgmm_codivide(input_loss, targets_all)
+
+    per_class_accuracy /= 50000 / 100
+    per_class_accuracy *= 100
+    std = per_class_accuracy.std()
+    acc = per_class_accuracy.mean()
+    stats_log.write(
+        f"Epoch:{epoch:d},Accuracy:{acc:.2f},STD:{std:.4f}\n"
+    )
+    stats_log.flush()
 
     return prob, all_loss, losses_clean
 
